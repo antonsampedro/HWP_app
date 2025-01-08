@@ -1,11 +1,89 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Potential Habitat Suitability for Himalayan Wolf</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" integrity="sha384-A8oNzW4yX7QUJS8MoqsmTwDq7NQQXji8mAICtw5aCUZtB4Sn51+fQXtjY3aOjht3" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" integrity="sha384-KY3zd5dTJrgZaCJGbCWszEZ8bCLgHZgMX9fuU8ze9O1vs9U5FCR6axZ4d15cB2ql" crossorigin=""></script>
+    <script src="https://unpkg.com/georaster-layer-for-leaflet@2.0.2/dist/georaster-layer-for-leaflet.min.js"></script>
+    <script src="https://unpkg.com/geotiff@1.0.0-beta.6/dist/geotiff.min.js"></script>
 </head>
 <body>
-    <h1>Himalayan Wolf Habitat Suitability App</h1>
-    <p>Haz clic en el siguiente enlace para ver la aplicación:</p>
-    <a href="https://nolugares.shinyapps.io/warming_app/">Abrir la aplicación Shiny</a>
+    <h1>Potential Habitat Suitability for Himalayan Wolf</h1>
+
+    <div style="display: flex;">
+        <div style="flex: 1; padding: 10px;">
+            <h4>Global warming scenario</h4>
+            <select id="scenario">
+                <option value="SSP1-RCP2.6">SSP1-RCP 2.6</option>
+                <option value="SSP2-RCP4.5" selected>SSP2-RCP 4.5</option>
+                <option value="SSP4-RCP8.5">SSP4-RCP 8.5</option>
+            </select>
+            
+            <h4>Prediction time range</h4>
+            <select id="timeRange">
+                <option value="2021-2040" selected>2021-2040</option>
+                <option value="2041-2060">2041-2060</option>
+                <option value="2061-2080">2061-2080</option>
+            </select>
+        </div>
+    </div>
+
+    <div style="display: flex;">
+        <div id="mapBase" style="height: 500px; flex: 1; margin: 10px;"></div>
+        <div id="mapSelected" style="height: 500px; flex: 1; margin: 10px;"></div>
+    </div>
+
+    <script>
+        // Initialize base map
+        var mapBase = L.map('mapBase').setView([28.0, 84.0], 7);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(mapBase);
+
+        // Initialize second map for selected raster
+        var mapSelected = L.map('mapSelected').setView([28.0, 84.0], 7);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(mapSelected);
+
+        // Function to load raster data using GeoTIFF
+        async function loadRaster(map, filePath) {
+            const response = await fetch(filePath);
+            const arrayBuffer = await response.arrayBuffer();
+            const tiff = await GeoTIFF.fromArrayBuffer(arrayBuffer);
+            const image = await tiff.getImage();
+            const values = await image.readRasters();
+
+            const layer = new GeoRasterLayer({
+                georaster: image,
+                opacity: 0.7,
+                resolution: 256 // Adjust as necessary for your raster resolution
+            });
+
+            map.eachLayer((layer) => {
+                if (!(layer instanceof L.TileLayer)) {
+                    map.removeLayer(layer);
+                }
+            });
+
+            layer.addTo(map);
+        }
+
+        // Load the initial map raster
+        loadRaster(mapBase, 'https://raw.githubusercontent.com/your-repo-path/pred.hw.tif');
+
+        // Event listeners for selectors
+        document.getElementById('scenario').addEventListener('change', updateSelectedMap);
+        document.getElementById('timeRange').addEventListener('change', updateSelectedMap);
+
+        function updateSelectedMap() {
+            var scenario = document.getElementById('scenario').value;
+            var timeRange = document.getElementById('timeRange').value;
+            var rasterFile = `https://raw.githubusercontent.com/your-repo-path/pred.hw.${scenario.toLowerCase()}.${timeRange}.tif`;
+            loadRaster(mapSelected, rasterFile);
+        }
+    </script>
 </body>
 </html>
