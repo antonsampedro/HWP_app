@@ -1,0 +1,10 @@
+name: warming_app
+title:
+username: nolugares
+account: nolugares
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 13680168
+bundleId: 9621707
+url: https://nolugares.shinyapps.io/warming_app/
+version: 1
